@@ -1,0 +1,67 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.login-card {
+  width: 400px;
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px);
+  border-radius: 15px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.login-header {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.login-header h2 {
+  color: #fff;
+  font-size: 24px;
+  margin: 0;
+  font-weight: 300;
+}
+
+.el-input__inner {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+.el-input__inner::placeholder {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.login-button {
+  width: 100%;
+  background: linear-gradient(45deg, #3be8b0, #1a73e8) !important;
+  border: none !important;
+  height: 45px;
+  font-size: 16px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  transition: 0.3s all ease;
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+} 
