@@ -15,7 +15,6 @@
             >
               <el-option label="全部" value="" />
               <el-option label="正常" value="VALID" />
-              <el-option label="即将过期" value="EXPIRING" />
               <el-option label="异常" value="ERROR" />
             </el-select>
           </div>
@@ -29,16 +28,16 @@
         v-loading="loading"
         :row-class-name="getRowClassName"
       >
-        <el-table-column prop="domainName" label="域名" min-width="180" />
-        <el-table-column prop="notificationEmail" label="通知邮箱" min-width="180" />
-        <el-table-column prop="certificateStatus" label="证书状态" width="120">
+        <el-table-column prop="domainName" label="域名" min-width="160" />
+        <el-table-column prop="notificationEmail" label="通知邮箱" min-width="160" />
+        <el-table-column prop="certificateStatus" label="证书状态" width="100">
           <template #default="scope">
             <el-tag :type="getStatusType(scope.row.certificateStatus)">
-              {{ scope.row.certificateStatus }}
+              {{ getStatusText(scope.row.certificateStatus) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="certificateExpiryDate" label="到期时间" width="180">
+        <el-table-column prop="certificateExpiryDate" label="到期时间" width="160">
           <template #default="scope">
             <div :class="getExpiryClass(scope.row.certificateExpiryDate)">
               {{ formatDate(scope.row.certificateExpiryDate) }}
@@ -53,12 +52,12 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="lastChecked" label="最后检查时间" width="180">
+        <el-table-column prop="lastChecked" label="最后检查时间" width="160">
           <template #default="scope">
             {{ formatDate(scope.row.lastChecked) }}
           </template>
         </el-table-column>
-        <el-table-column prop="autoRenewal" label="自动续期" width="100">
+        <el-table-column prop="autoRenewal" label="自动续期" width="80" align="center">
           <template #default="scope">
             <el-switch
               v-model="scope.row.autoRenewal"
@@ -66,47 +65,73 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" width="280">
+        <el-table-column label="操作" fixed="right" width="360" align="center">
           <template #default="scope">
-            <el-button size="small" @click="checkCertificate(scope.row)">
-              检查证书
-            </el-button>
-            <el-button
-              size="small"
-              type="warning"
-              @click="sendNotification(scope.row)"
-              :disabled="!scope.row.certificateExpiryDate"
-            >
-              发送通知
-            </el-button>
-            <el-button
-              size="small"
-              type="danger"
-              @click="deleteDomain(scope.row)"
-            >
-              删除
-            </el-button>
+            <div class="operation-buttons">
+              <el-button size="small" @click="checkCertificate(scope.row)">
+                检查证书
+              </el-button>
+              <el-button
+                size="small"
+                type="warning"
+                @click="sendNotification(scope.row)"
+                :disabled="!scope.row.certificateExpiryDate"
+              >
+                发送通知
+              </el-button>
+              <el-button
+                size="small"
+                type="primary"
+                @click="showEditDialog(scope.row)"
+              >
+                编辑
+              </el-button>
+              <el-button
+                size="small"
+                type="danger"
+                @click="deleteDomain(scope.row)"
+              >
+                删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" title="添加域名">
+    <el-dialog v-model="dialogVisible" :title="isEditing ? '编辑域名' : '添加域名'" :close-on-click-modal="false">
       <el-form :model="newDomain" label-width="120px">
-        <el-form-item label="域名">
-          <el-input v-model="newDomain.domainName" />
+        <el-form-item label="域名" required>
+          <el-input 
+            v-model="newDomain.domainName" 
+            :placeholder="isEditing ? '' : '请输入域名（如：example.com）'"
+            :disabled="isUpdating || addingDomain"
+          />
         </el-form-item>
         <el-form-item label="通知邮箱">
-          <el-input v-model="newDomain.notificationEmail" placeholder="接收证书过期通知的邮箱" />
+          <el-input 
+            v-model="newDomain.notificationEmail" 
+            placeholder="接收证书过期通知的邮箱"
+            :disabled="isUpdating || addingDomain"
+          />
         </el-form-item>
         <el-form-item label="自动续期">
-          <el-switch v-model="newDomain.autoRenewal" />
+          <el-switch 
+            v-model="newDomain.autoRenewal"
+            :disabled="isUpdating || addingDomain"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="addDomain">确定</el-button>
+          <el-button @click="dialogVisible = false" :disabled="isUpdating || addingDomain">取消</el-button>
+          <el-button 
+            type="primary" 
+            @click="isEditing ? updateDomain() : addDomain()"
+            :loading="isUpdating || addingDomain"
+          >
+            {{ isUpdating || addingDomain ? '处理中...' : '确定' }}
+          </el-button>
         </span>
       </template>
     </el-dialog>
@@ -121,26 +146,41 @@ import moment from 'moment'
 import Dashboard from './Dashboard.vue'
 
 const API_BASE_URL = 'http://localhost:8080/api'
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000 // 1 second
 const domains = ref([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 const filterStatus = ref('')
 const addingDomain = ref(false)
+const isEditing = ref(false)
+const editingId = ref(null)
+const isUpdating = ref(false)
 const newDomain = ref({
   domainName: '',
   notificationEmail: '',
   autoRenewal: true
 })
 
-const loadDomains = async () => {
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+const loadDomains = async (retryCount = 0) => {
   loading.value = true
   try {
     const response = await axios.get(`${API_BASE_URL}/domains`)
     domains.value = response.data
   } catch (error) {
-    ElMessage.error('加载域名列表失败')
+    console.error('Failed to load domains:', error)
+    if (error.message.includes('Network Error') && retryCount < MAX_RETRIES) {
+      ElMessage.warning(`连接服务器失败，${retryCount + 1}秒后重试...`)
+      await sleep(RETRY_DELAY)
+      return loadDomains(retryCount + 1)
+    }
+    ElMessage.error(error.message.includes('Network Error') ? 
+      '无法连接到服务器，请确保后端服务已启动' : '加载域名列表失败')
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
 const filteredDomains = computed(() => {
@@ -169,15 +209,21 @@ const addDomain = async () => {
     }
 
     addingDomain.value = true
-    const response = await axios.post(`${API_BASE_URL}/domains`, newDomain.value)
-    ElMessage.success('添加域名成功')
-    dialogVisible.value = false
-    await loadDomains()
-  } catch (error) {
-    const errorMessage = error.response?.data?.error || '添加域名失败'
-    ElMessage.error(errorMessage)
-    if (errorMessage.includes('already exists')) {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/domains`, newDomain.value)
+      ElMessage.success('添加域名成功')
       dialogVisible.value = false
+      await loadDomains()
+    } catch (error) {
+      if (error.message.includes('Network Error')) {
+        ElMessage.error('无法连接到服务器，请确保后端服务已启动')
+      } else {
+        const errorMessage = error.response?.data?.error || '添加域名失败'
+        ElMessage.error(errorMessage)
+        if (errorMessage.includes('already exists')) {
+          dialogVisible.value = false
+        }
+      }
     }
   } finally {
     addingDomain.value = false
@@ -224,14 +270,11 @@ const formatDate = (date) => {
 }
 
 const getStatusType = (status) => {
-  switch (status) {
-    case 'VALID':
-      return 'success'
-    case 'ERROR':
-      return 'danger'
-    default:
-      return 'info'
-  }
+  return status === 'VALID' ? 'success' : 'danger';
+}
+
+const getStatusText = (status) => {
+  return status === 'VALID' ? '正常' : '异常';
 }
 
 const isExpiringSoon = (date) => {
@@ -252,18 +295,61 @@ const getExpiryClass = (date) => {
 }
 
 const getRowClassName = ({ row }) => {
-  if (row.certificateStatus === 'ERROR') return 'error-row'
-  if (isExpiringSoon(row.certificateExpiryDate)) return 'warning-row'
-  return ''
+  return row.certificateStatus === 'ERROR' ? 'error-row' : '';
+}
+
+const showEditDialog = (domain) => {
+  isEditing.value = true
+  editingId.value = domain.id
+  newDomain.value = {
+    domainName: domain.domainName,
+    notificationEmail: domain.notificationEmail,
+    autoRenewal: domain.autoRenewal
+  }
+  dialogVisible.value = true
 }
 
 const showAddDomainDialog = () => {
+  isEditing.value = false
+  editingId.value = null
   newDomain.value = {
     domainName: '',
     notificationEmail: '',
     autoRenewal: true
   }
   dialogVisible.value = true
+}
+
+const updateDomain = async () => {
+  if (isUpdating.value) return;
+
+  if (!newDomain.value.domainName.trim()) {
+    ElMessage.error('域名不能为空')
+    return
+  }
+  
+  if (newDomain.value.notificationEmail && !isValidEmail(newDomain.value.notificationEmail)) {
+    ElMessage.error('请输入有效的邮箱地址')
+    return
+  }
+
+  try {
+    isUpdating.value = true
+    loading.value = true
+    const response = await axios.put(`${API_BASE_URL}/domains/${editingId.value}`, newDomain.value)
+    if (response.data) {
+      ElMessage.success('更新域名成功')
+      dialogVisible.value = false
+      await loadDomains()
+    }
+  } catch (error) {
+    console.error('Error updating domain:', error)
+    const errorMessage = error.response?.data?.error || '更新域名失败'
+    ElMessage.error(errorMessage)
+  } finally {
+    isUpdating.value = false
+    loading.value = false
+  }
 }
 
 const sendNotification = async (domain) => {
@@ -284,6 +370,8 @@ onMounted(() => {
 <style scoped>
 .domain-list {
   padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .card-header {
@@ -317,6 +405,13 @@ onMounted(() => {
 
 .expiry-tag {
   margin-left: 8px;
+}
+
+.operation-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: nowrap;
 }
 
 :deep(.error-row) {

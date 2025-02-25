@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Slf4j
 @RestController
@@ -45,20 +47,37 @@ public class DomainController {
                     .body(createErrorResponse("Domain name cannot be empty"));
             }
 
+            // 清理域名格式
+            String cleanDomainName = cleanDomainName(domain.getDomainName());
+            domain.setDomainName(cleanDomainName);
+
             // 检查域名是否已存在
-            if (domainRepository.findByDomainName(domain.getDomainName()).isPresent()) {
+            if (domainRepository.findByDomainName(cleanDomainName).isPresent()) {
                 return ResponseEntity.badRequest()
                     .body(createErrorResponse("Domain already exists"));
             }
 
             Domain savedDomain = domainRepository.save(domain);
-            Domain checkedDomain = certificateService.checkCertificate(domain.getDomainName());
+            Domain checkedDomain = certificateService.checkCertificate(cleanDomainName);
             return ResponseEntity.ok(checkedDomain);
         } catch (Exception e) {
             log.error("Error adding domain: " + domain.getDomainName(), e);
             return ResponseEntity.internalServerError()
                 .body(createErrorResponse("Failed to add domain: " + e.getMessage()));
         }
+    }
+
+    private String cleanDomainName(String domainName) {
+        if (domainName == null) return null;
+        // 移除前后空格
+        domainName = domainName.trim();
+        // 移除协议前缀
+        domainName = domainName.replaceAll("^(https?://)", "");
+        // 移除路径后缀
+        domainName = domainName.replaceAll("/.*$", "");
+        // 移除端口号
+        domainName = domainName.replaceAll(":\\d+$", "");
+        return domainName;
     }
 
     @DeleteMapping("/{id}")
@@ -114,8 +133,11 @@ public class DomainController {
                         return ResponseEntity.badRequest()
                             .body(createErrorResponse("Certificate expiry date not available"));
                     }
-                    emailService.sendExpiryNotification(domain, 
-                        certificateService.calculateDaysUntilExpiry(domain));
+                    int daysUntilExpiry = (int) ChronoUnit.DAYS.between(
+                        LocalDateTime.now(), 
+                        domain.getCertificateExpiryDate()
+                    );
+                    emailService.sendExpiryNotification(domain, daysUntilExpiry);
                     return ResponseEntity.ok()
                         .body(createSuccessResponse("Notification sent successfully"));
                 })
@@ -124,6 +146,36 @@ public class DomainController {
             log.error("Error sending notification for domain id: " + id, e);
             return ResponseEntity.internalServerError()
                 .body(createErrorResponse("Failed to send notification: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateDomain(@PathVariable Long id, @Valid @RequestBody Domain domain) {
+        try {
+            return domainRepository.findById(id)
+                .map(existingDomain -> {
+                    String cleanDomainName = cleanDomainName(domain.getDomainName());
+                    
+                    // 如果域名变更，检查新域名是否已存在
+                    if (!existingDomain.getDomainName().equals(cleanDomainName) &&
+                        domainRepository.findByDomainName(cleanDomainName).isPresent()) {
+                        return ResponseEntity.badRequest()
+                            .body(createErrorResponse("Domain already exists"));
+                    }
+                    
+                    existingDomain.setDomainName(cleanDomainName);
+                    existingDomain.setNotificationEmail(domain.getNotificationEmail());
+                    existingDomain.setAutoRenewal(domain.isAutoRenewal());
+                    
+                    Domain savedDomain = domainRepository.save(existingDomain);
+                    Domain checkedDomain = certificateService.checkCertificate(cleanDomainName);
+                    return ResponseEntity.ok(checkedDomain);
+                })
+                .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Error updating domain with id: " + id, e);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Failed to update domain: " + e.getMessage()));
         }
     }
 

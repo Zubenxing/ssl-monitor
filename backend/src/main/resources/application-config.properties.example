@@ -1,0 +1,55 @@
+# ========================
+# 服务器配置
+# ========================
+# 服务器端口
+server.port=8080
+
+# ========================
+# 数据库配置
+# ========================
+# 数据库连接URL（目前使用H2内存数据库，可以替换为MySQL等）
+database.url=jdbc:h2:mem:sslmonitor
+# 数据库驱动
+database.driver=org.h2.Driver
+# 数据库用户名
+database.username=sa
+# 数据库密码
+database.password=password
+
+# ========================
+# 邮件配置
+# ========================
+# 邮件服务器地址
+mail.host=smtp.gmail.com
+# 邮件服务器端口
+mail.port=465
+# 发件人邮箱
+mail.username=example@gmail.com
+# 邮箱授权码（不是邮箱密码）
+mail.password=your_authorization_code
+# 是否启用邮件通知功能
+mail.notification.enabled=true
+# 邮件协议
+mail.protocol=smtp
+# 字符编码
+mail.charset=utf-8
+# SSL加密
+mail.smtp.ssl.enable=true
+# STARTTLS加密
+mail.smtp.starttls.enable=true
+
+# ========================
+# Redis配置（预留）
+# ========================
+# redis.host=localhost
+# redis.port=6379
+# redis.password=
+# redis.database=0
+
+# ========================
+# 其他配置
+# ========================
+# 证书检查间隔（小时）
+certificate.check.interval=12
+# 证书自动续期提前天数
+certificate.renewal.advance.days=30 
