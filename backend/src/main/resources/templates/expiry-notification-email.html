@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>证书过期提醒</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #409EFF;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .warning {
+            color: #E6A23C;
+            font-weight: bold;
+        }
+        .footer {
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>SSL证书过期提醒</h2>
+    </div>
+    
+    <div class="content">
+        <p>您好，</p>
+        
+        <p>系统检测到以下域名的SSL证书即将在30天内过期：</p>
+        
+        <p>
+            <strong>域名：</strong> <span th:text="${domain.domainName}"></span><br>
+            <strong>过期时间：</strong> <span th:text="${#temporals.format(expiryDate, 'yyyy-MM-dd HH:mm:ss')}"></span><br>
+            <strong class="warning">剩余天数：</strong> <span class="warning" th:text="${daysUntilExpiry}">天</span>
+        </p>
+        
+        <p>建议您及时更新SSL证书，以确保网站的安全性和可访问性。</p>
+        
+        <p>如果您已开启自动续期功能，系统将在证书过期前自动进行续期操作。</p>
+    </div>
+    
+    <div class="footer">
+        <p>此邮件由SSL证书监控系统自动发送，请勿直接回复。</p>
+        <p>如有问题，请联系系统管理员。</p>
+    </div>
+</body>
+</html> 

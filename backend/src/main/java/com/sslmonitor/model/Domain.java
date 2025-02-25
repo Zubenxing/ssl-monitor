@@ -1,6 +1,7 @@
 package com.sslmonitor.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -32,4 +33,8 @@ public class Domain {
 
     @Column(length = 2048)
     private String certificateDetails;
+
+    @Email(message = "请输入有效的邮箱地址")
+    @Column
+    private String notificationEmail;
 } 

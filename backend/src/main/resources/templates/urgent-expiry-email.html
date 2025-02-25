@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>证书紧急过期提醒</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #F56C6C;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .content {
+            background-color: #fef0f0;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .urgent {
+            color: #F56C6C;
+            font-weight: bold;
+        }
+        .warning-box {
+            background-color: #fff6f6;
+            border: 1px solid #F56C6C;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>⚠️ SSL证书紧急过期提醒 ⚠️</h2>
+    </div>
+    
+    <div class="content">
+        <p>您好，</p>
+        
+        <p class="urgent">系统检测到以下域名的SSL证书即将在7天内过期，请务必立即处理！</p>
+        
+        <div class="warning-box">
+            <p>
+                <strong>域名：</strong> <span th:text="${domain.domainName}"></span><br>
+                <strong>过期时间：</strong> <span th:text="${#temporals.format(expiryDate, 'yyyy-MM-dd HH:mm:ss')}"></span><br>
+                <strong class="urgent">剩余天数：</strong> <span class="urgent" th:text="${daysUntilExpiry}">天</span>
+            </p>
+        </div>
+        
+        <p><strong>可能的影响：</strong></p>
+        <ul>
+            <li>网站将显示不安全警告</li>
+            <li>用户可能无法访问网站</li>
+            <li>影响网站的SEO排名</li>
+            <li>损害用户体验和信任度</li>
+        </ul>
+        
+        <p><strong>建议操作：</strong></p>
+        <ul>
+            <li>立即检查自动续期功能是否正常</li>
+            <li>手动更新SSL证书</li>
+            <li>确保域名DNS记录正确配置</li>
+        </ul>
+    </div>
+    
+    <div class="footer">
+        <p>此邮件由SSL证书监控系统自动发送，请勿直接回复。</p>
+        <p>如需帮助，请立即联系系统管理员。</p>
+    </div>
+</body>
+</html> 

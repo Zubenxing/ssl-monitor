@@ -30,6 +30,7 @@
         :row-class-name="getRowClassName"
       >
         <el-table-column prop="domainName" label="域名" min-width="180" />
+        <el-table-column prop="notificationEmail" label="通知邮箱" min-width="180" />
         <el-table-column prop="certificateStatus" label="证书状态" width="120">
           <template #default="scope">
             <el-tag :type="getStatusType(scope.row.certificateStatus)">
@@ -87,6 +88,9 @@
         <el-form-item label="域名">
           <el-input v-model="newDomain.domainName" />
         </el-form-item>
+        <el-form-item label="通知邮箱">
+          <el-input v-model="newDomain.notificationEmail" placeholder="接收证书过期通知的邮箱" />
+        </el-form-item>
         <el-form-item label="自动续期">
           <el-switch v-model="newDomain.autoRenewal" />
         </el-form-item>
@@ -113,8 +117,10 @@ const domains = ref([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 const filterStatus = ref('')
+const addingDomain = ref(false)
 const newDomain = ref({
   domainName: '',
+  notificationEmail: '',
   autoRenewal: true
 })
 
@@ -141,14 +147,38 @@ const filteredDomains = computed(() => {
 })
 
 const addDomain = async () => {
+  if (addingDomain.value) return;
+  
   try {
-    await axios.post(`${API_BASE_URL}/domains`, newDomain.value)
+    if (!newDomain.value.domainName.trim()) {
+      ElMessage.error('域名不能为空')
+      return
+    }
+    
+    if (newDomain.value.notificationEmail && !isValidEmail(newDomain.value.notificationEmail)) {
+      ElMessage.error('请输入有效的邮箱地址')
+      return
+    }
+
+    addingDomain.value = true
+    const response = await axios.post(`${API_BASE_URL}/domains`, newDomain.value)
     ElMessage.success('添加域名成功')
     dialogVisible.value = false
-    loadDomains()
+    await loadDomains()
   } catch (error) {
-    ElMessage.error('添加域名失败')
+    const errorMessage = error.response?.data?.error || '添加域名失败'
+    ElMessage.error(errorMessage)
+    if (errorMessage.includes('already exists')) {
+      dialogVisible.value = false
+    }
+  } finally {
+    addingDomain.value = false
   }
+}
+
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
 }
 
 const deleteDomain = async (domain) => {
@@ -222,6 +252,7 @@ const getRowClassName = ({ row }) => {
 const showAddDomainDialog = () => {
   newDomain.value = {
     domainName: '',
+    notificationEmail: '',
     autoRenewal: true
   }
   dialogVisible.value = true
