@@ -48,7 +48,7 @@ public class CertificateService {
         this.emailService = emailService;
     }
 
-    public Domain checkCertificate(String domainName) {
+    public Domain checkCertificate(String domainName, boolean isManualCheck) {
         int retryCount = 0;
         Exception lastException = null;
         Domain domain = null;
@@ -170,16 +170,25 @@ public class CertificateService {
         // 保存域名信息
         Domain savedDomain = domainRepository.save(domain);
         
-        // 异步发送邮件通知（如果需要）
-        if (StringUtils.hasText(savedDomain.getNotificationEmail())) {
-            CompletableFuture.runAsync(() -> {
-                try {
-                    Thread.sleep(1000); // 延迟1秒发送邮件
-                    emailService.sendExpiryNotification(savedDomain, (int)checkResult.getDaysUntilExpiry());
-                } catch (Exception e) {
-                    log.error("Failed to send notification email for domain: " + savedDomain.getDomainName(), e);
-                }
-            });
+        // 检查是否需要发送邮件通知（证书有效期小于30天）
+        if (savedDomain.getCertificateExpiryDate() != null && 
+            StringUtils.hasText(savedDomain.getNotificationEmail())) {
+            
+            long daysUntilExpiry = ChronoUnit.DAYS.between(
+                LocalDateTime.now(), 
+                savedDomain.getCertificateExpiryDate()
+            );
+            
+            // 只在证书有效期小于30天时发送邮件
+            if (daysUntilExpiry <= 30) {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        emailService.sendExpiryNotification(savedDomain, (int)daysUntilExpiry);
+                    } catch (Exception e) {
+                        log.error("Failed to send notification email for domain: {}", savedDomain.getDomainName(), e);
+                    }
+                });
+            }
         }
         
         return savedDomain;
@@ -331,7 +340,7 @@ public class CertificateService {
         List<Domain> domains = domainRepository.findAll();
         for (Domain domain : domains) {
             try {
-                checkCertificate(domain.getDomainName());
+                checkCertificate(domain.getDomainName(), false);
             } catch (Exception e) {
                 log.error("Failed to check certificate for domain: " + domain.getDomainName(), e);
             }
@@ -436,5 +445,18 @@ public class CertificateService {
             log.error("Unexpected error during certificate renewal for domain: " + domain.getDomainName(), e);
             throw new RuntimeException("Certificate renewal failed", e);
         }
+    }
+
+    public void doCheckCertificate(Domain domain) {
+        try {
+            doCheckCertificate(domain.getDomainName());
+        } catch (Exception e) {
+            log.error("Failed to check certificate for domain: " + domain.getDomainName(), e);
+        }
+    }
+
+    // 默认的checkCertificate方法设为手动检查
+    public Domain checkCertificate(String domainName) {
+        return checkCertificate(domainName, true);
     }
 } 
