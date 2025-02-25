@@ -1,15 +1,35 @@
 <template>
   <div class="domain-list">
+    <Dashboard :domains="domains" />
+    
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
-          <span>域名证书监控</span>
+          <div class="left">
+            <span class="title">域名证书监控</span>
+            <el-select
+              v-model="filterStatus"
+              placeholder="证书状态"
+              clearable
+              class="filter-select"
+            >
+              <el-option label="全部" value="" />
+              <el-option label="正常" value="VALID" />
+              <el-option label="即将过期" value="EXPIRING" />
+              <el-option label="异常" value="ERROR" />
+            </el-select>
+          </div>
           <el-button type="primary" @click="showAddDomainDialog">添加域名</el-button>
         </div>
       </template>
 
-      <el-table :data="domains" style="width: 100%" v-loading="loading">
-        <el-table-column prop="domainName" label="域名" width="180" />
+      <el-table 
+        :data="filteredDomains" 
+        style="width: 100%" 
+        v-loading="loading"
+        :row-class-name="getRowClassName"
+      >
+        <el-table-column prop="domainName" label="域名" min-width="180" />
         <el-table-column prop="certificateStatus" label="证书状态" width="120">
           <template #default="scope">
             <el-tag :type="getStatusType(scope.row.certificateStatus)">
@@ -19,7 +39,17 @@
         </el-table-column>
         <el-table-column prop="certificateExpiryDate" label="到期时间" width="180">
           <template #default="scope">
-            {{ formatDate(scope.row.certificateExpiryDate) }}
+            <div :class="getExpiryClass(scope.row.certificateExpiryDate)">
+              {{ formatDate(scope.row.certificateExpiryDate) }}
+              <el-tag 
+                v-if="isExpiringSoon(scope.row.certificateExpiryDate)" 
+                size="small" 
+                type="warning"
+                class="expiry-tag"
+              >
+                {{ getDaysUntilExpiry(scope.row.certificateExpiryDate) }}天后过期
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="lastChecked" label="最后检查时间" width="180">
@@ -35,7 +65,7 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="操作">
+        <el-table-column label="操作" fixed="right" width="200">
           <template #default="scope">
             <el-button size="small" @click="checkCertificate(scope.row)">
               检查证书
@@ -72,15 +102,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 import moment from 'moment'
+import Dashboard from './Dashboard.vue'
 
 const API_BASE_URL = 'http://localhost:8080/api'
 const domains = ref([])
 const loading = ref(false)
 const dialogVisible = ref(false)
+const filterStatus = ref('')
 const newDomain = ref({
   domainName: '',
   autoRenewal: true
@@ -96,6 +128,17 @@ const loadDomains = async () => {
   }
   loading.value = false
 }
+
+const filteredDomains = computed(() => {
+  if (!filterStatus.value) return domains.value
+  
+  return domains.value.filter(domain => {
+    if (filterStatus.value === 'EXPIRING') {
+      return isExpiringSoon(domain.certificateExpiryDate)
+    }
+    return domain.certificateStatus === filterStatus.value
+  })
+})
 
 const addDomain = async () => {
   try {
@@ -153,6 +196,29 @@ const getStatusType = (status) => {
   }
 }
 
+const isExpiringSoon = (date) => {
+  if (!date) return false
+  const expiryDate = moment(date)
+  const daysUntilExpiry = expiryDate.diff(moment(), 'days')
+  return daysUntilExpiry <= 30 && daysUntilExpiry >= 0
+}
+
+const getDaysUntilExpiry = (date) => {
+  if (!date) return 0
+  return moment(date).diff(moment(), 'days')
+}
+
+const getExpiryClass = (date) => {
+  if (!date) return ''
+  return isExpiringSoon(date) ? 'expiring-soon' : ''
+}
+
+const getRowClassName = ({ row }) => {
+  if (row.certificateStatus === 'ERROR') return 'error-row'
+  if (isExpiringSoon(row.certificateExpiryDate)) return 'warning-row'
+  return ''
+}
+
 const showAddDomainDialog = () => {
   newDomain.value = {
     domainName: '',
@@ -177,7 +243,38 @@ onMounted(() => {
   align-items: center;
 }
 
+.left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.filter-select {
+  width: 120px;
+}
+
 .dialog-footer {
   margin-top: 20px;
+}
+
+.expiring-soon {
+  color: #E6A23C;
+}
+
+.expiry-tag {
+  margin-left: 8px;
+}
+
+:deep(.error-row) {
+  --el-table-tr-bg-color: var(--el-color-danger-light-9);
+}
+
+:deep(.warning-row) {
+  --el-table-tr-bg-color: var(--el-color-warning-light-9);
 }
 </style> 
