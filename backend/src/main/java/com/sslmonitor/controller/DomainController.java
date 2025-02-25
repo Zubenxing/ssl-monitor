@@ -2,6 +2,7 @@ package com.sslmonitor.controller;
 
 import com.sslmonitor.model.Domain;
 import com.sslmonitor.service.CertificateService;
+import com.sslmonitor.service.EmailService;
 import com.sslmonitor.repository.DomainRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,10 +23,12 @@ public class DomainController {
 
     private final DomainRepository domainRepository;
     private final CertificateService certificateService;
+    private final EmailService emailService;
 
-    public DomainController(DomainRepository domainRepository, CertificateService certificateService) {
+    public DomainController(DomainRepository domainRepository, CertificateService certificateService, EmailService emailService) {
         this.domainRepository = domainRepository;
         this.certificateService = certificateService;
+        this.emailService = emailService;
     }
 
     @GetMapping
@@ -102,9 +105,37 @@ public class DomainController {
         }
     }
 
+    @PostMapping("/{id}/send-notification")
+    public ResponseEntity<?> sendNotification(@PathVariable Long id) {
+        try {
+            return domainRepository.findById(id)
+                .map(domain -> {
+                    if (domain.getCertificateExpiryDate() == null) {
+                        return ResponseEntity.badRequest()
+                            .body(createErrorResponse("Certificate expiry date not available"));
+                    }
+                    emailService.sendExpiryNotification(domain, 
+                        certificateService.calculateDaysUntilExpiry(domain));
+                    return ResponseEntity.ok()
+                        .body(createSuccessResponse("Notification sent successfully"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Error sending notification for domain id: " + id, e);
+            return ResponseEntity.internalServerError()
+                .body(createErrorResponse("Failed to send notification: " + e.getMessage()));
+        }
+    }
+
     private Map<String, String> createErrorResponse(String message) {
         Map<String, String> response = new HashMap<>();
         response.put("error", message);
+        return response;
+    }
+
+    private Map<String, String> createSuccessResponse(String message) {
+        Map<String, String> response = new HashMap<>();
+        response.put("message", message);
         return response;
     }
 } 

@@ -66,10 +66,18 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" width="200">
+        <el-table-column label="操作" fixed="right" width="280">
           <template #default="scope">
             <el-button size="small" @click="checkCertificate(scope.row)">
               检查证书
+            </el-button>
+            <el-button
+              size="small"
+              type="warning"
+              @click="sendNotification(scope.row)"
+              :disabled="!scope.row.certificateExpiryDate"
+            >
+              发送通知
             </el-button>
             <el-button
               size="small"
@@ -256,6 +264,16 @@ const showAddDomainDialog = () => {
     autoRenewal: true
   }
   dialogVisible.value = true
+}
+
+const sendNotification = async (domain) => {
+  try {
+    await axios.post(`${API_BASE_URL}/domains/${domain.id}/send-notification`)
+    ElMessage.success('通知邮件发送成功')
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || '发送通知失败'
+    ElMessage.error(errorMessage)
+  }
 }
 
 onMounted(() => {

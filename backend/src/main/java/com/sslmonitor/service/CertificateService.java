@@ -173,14 +173,19 @@ public class CertificateService {
     private void checkAndSendNotification(Domain domain) {
         if (domain.getCertificateExpiryDate() == null) return;
 
-        LocalDateTime now = LocalDateTime.now();
-        long daysUntilExpiry = ChronoUnit.DAYS.between(now, domain.getCertificateExpiryDate());
+        int daysUntilExpiry = calculateDaysUntilExpiry(domain);
 
         if (daysUntilExpiry <= 7) {
-            emailService.sendExpiryNotification(domain, (int) daysUntilExpiry);
+            emailService.sendExpiryNotification(domain, daysUntilExpiry);
         } else if (daysUntilExpiry <= 30) {
-            emailService.sendExpiryNotification(domain, (int) daysUntilExpiry);
+            emailService.sendExpiryNotification(domain, daysUntilExpiry);
         }
+    }
+
+    public int calculateDaysUntilExpiry(Domain domain) {
+        if (domain.getCertificateExpiryDate() == null) return 0;
+        LocalDateTime now = LocalDateTime.now();
+        return (int) ChronoUnit.DAYS.between(now, domain.getCertificateExpiryDate());
     }
 
     private void renewCertificate(Domain domain) {
