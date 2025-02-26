@@ -64,6 +64,7 @@
   
   <script>
   import { User, Lock } from '@element-plus/icons-vue'
+  import axios from 'axios'
   
   export default {
     name: 'Login',
@@ -89,20 +90,45 @@
         }
       }
     },
+    mounted() {
+      // 如果之前选择了记住我，自动填充用户名
+      const savedUsername = localStorage.getItem('username')
+      if (savedUsername) {
+        this.loginForm.username = savedUsername
+        this.rememberMe = true
+      }
+    },
     methods: {
-      handleLogin() {
-        this.$refs.loginForm.validate(valid => {
+      async handleLogin() {
+        this.$refs.loginForm.validate(async valid => {
           if (valid) {
             this.loading = true
-            // 模拟登录请求
-            setTimeout(() => {
-              localStorage.setItem('token', 'demo-token')
+            try {
+              // 使用全局配置的 axios 实例
+              const response = await this.$http.post('/auth/login', {
+                username: this.loginForm.username,
+                password: this.loginForm.password
+              })
+              
+              // 保存令牌
+              localStorage.setItem('token', response.data.token)
+              
+              // 如果选择了记住我，保存用户名
               if (this.rememberMe) {
                 localStorage.setItem('username', this.loginForm.username)
               }
+              
+              // 登录成功后跳转到仪表盘
               this.$router.push('/dashboard')
+              this.$message.success('登录成功！')
+            } catch (error) {
+              console.error('Login error:', error)
+              // 处理登录错误
+              const errorMsg = error.response?.data?.message || '登录失败，请检查网络连接'
+              this.$message.error(errorMsg)
+            } finally {
               this.loading = false
-            }, 1500)
+            }
           }
         })
       },
@@ -114,19 +140,10 @@
         })
       },
       goToRegister() {
-        // 暂时使用弹窗提示
         this.$message({
           message: '注册功能正在开发中...',
           type: 'info'
         })
-      }
-    },
-    mounted() {
-      // 如果之前选择了记住我，自动填充用户名
-      const savedUsername = localStorage.getItem('username')
-      if (savedUsername) {
-        this.loginForm.username = savedUsername
-        this.rememberMe = true
       }
     }
   }

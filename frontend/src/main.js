@@ -7,6 +7,7 @@ import App from './App.vue'
 import router from './router'
 import './assets/main.css'
 import './assets/global.css'
+import axios from './utils/axios'
 
 const app = createApp(App)
 
@@ -14,6 +15,9 @@ const app = createApp(App)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
+
+// 全局挂载 axios
+app.config.globalProperties.$http = axios
 
 app.use(ElementPlus)
 app.use(router)
