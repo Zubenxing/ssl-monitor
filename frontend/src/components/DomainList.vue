@@ -369,9 +369,22 @@ onMounted(() => {
 
 <style scoped>
 .domain-list {
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
+  height: 100%;
+}
+
+.box-card {
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+:deep(.el-card__header) {
   padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .card-header {
@@ -387,20 +400,64 @@ onMounted(() => {
 }
 
 .title {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
 }
 
 .filter-select {
   width: 120px;
 }
 
-.dialog-footer {
-  margin-top: 20px;
+:deep(.el-button--primary) {
+  background: linear-gradient(45deg, #6e45e2, #88d3ce);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+:deep(.el-button--primary:hover) {
+  box-shadow: 0 4px 12px rgba(110, 69, 226, 0.3);
+  transform: translateY(-2px);
+}
+
+:deep(.el-table) {
+  border-radius: 0 0 16px 16px;
+}
+
+:deep(.el-table th) {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #606266;
+}
+
+:deep(.el-table--enable-row-hover .el-table__body tr:hover > td) {
+  background-color: #f8f9fa;
+}
+
+:deep(.el-tag--success) {
+  background-color: rgba(103, 194, 58, 0.1);
+  border-color: rgba(103, 194, 58, 0.2);
+  color: #67C23A;
+}
+
+:deep(.el-tag--danger) {
+  background-color: rgba(245, 108, 108, 0.1);
+  border-color: rgba(245, 108, 108, 0.2);
+  color: #F56C6C;
+}
+
+:deep(.el-tag--warning) {
+  background-color: rgba(230, 162, 60, 0.1);
+  border-color: rgba(230, 162, 60, 0.2);
+  color: #E6A23C;
 }
 
 .expiring-soon {
   color: #E6A23C;
+  display: flex;
+  align-items: center;
 }
 
 .expiry-tag {
@@ -414,11 +471,53 @@ onMounted(() => {
   flex-wrap: nowrap;
 }
 
+:deep(.operation-buttons .el-button) {
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+:deep(.el-button--warning) {
+  background-color: rgba(230, 162, 60, 0.1);
+  border-color: #E6A23C;
+  color: #E6A23C;
+}
+
+:deep(.el-button--danger) {
+  background-color: rgba(245, 108, 108, 0.1);
+  border-color: #F56C6C;
+  color: #F56C6C;
+}
+
+:deep(.el-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+:deep(.el-dialog__header) {
+  margin: 0;
+  padding: 20px;
+  background: linear-gradient(45deg, #6e45e2, #88d3ce);
+  color: white;
+}
+
+:deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 30px 20px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
+
 :deep(.error-row) {
-  --el-table-tr-bg-color: var(--el-color-danger-light-9);
+  --el-table-tr-bg-color: rgba(245, 108, 108, 0.1);
 }
 
 :deep(.warning-row) {
-  --el-table-tr-bg-color: var(--el-color-warning-light-9);
+  --el-table-tr-bg-color: rgba(230, 162, 60, 0.1);
 }
 </style> 

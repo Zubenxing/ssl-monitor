@@ -1,48 +1,47 @@
 <template>
   <div class="dashboard">
-    <el-row :gutter="20">
+    <el-row :gutter="24">
       <el-col :span="8">
-        <el-card class="stat-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>总域名数</span>
+        <el-card class="stat-card primary" shadow="hover">
+          <div class="card-body">
+            <div class="stat-icon">
+              <el-icon><Connection /></el-icon>
             </div>
-          </template>
-          <div class="stat-value">
-            <span class="number">{{ totalDomains }}</span>
-            <span class="label">个域名</span>
+            <div class="stat-info">
+              <div class="stat-title">总域名数</div>
+              <div class="stat-value">{{ totalDomains }}</div>
+              <div class="stat-label">个域名</div>
+            </div>
           </div>
         </el-card>
       </el-col>
+      
       <el-col :span="8">
         <el-card class="stat-card warning" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>即将过期</span>
-              <el-tooltip
-                content="30天内即将过期的证书数量"
-                placement="top"
-              >
-                <el-icon><InfoFilled /></el-icon>
-              </el-tooltip>
+          <div class="card-body">
+            <div class="stat-icon">
+              <el-icon><Timer /></el-icon>
             </div>
-          </template>
-          <div class="stat-value">
-            <span class="number">{{ expiringDomains }}</span>
-            <span class="label">个域名</span>
+            <div class="stat-info">
+              <div class="stat-title">即将过期</div>
+              <div class="stat-value">{{ expiringDomains }}</div>
+              <div class="stat-label">个域名</div>
+            </div>
           </div>
         </el-card>
       </el-col>
+      
       <el-col :span="8">
-        <el-card class="stat-card error" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>异常状态</span>
+        <el-card class="stat-card danger" shadow="hover">
+          <div class="card-body">
+            <div class="stat-icon">
+              <el-icon><WarningFilled /></el-icon>
             </div>
-          </template>
-          <div class="stat-value">
-            <span class="number">{{ errorDomains }}</span>
-            <span class="label">个域名</span>
+            <div class="stat-info">
+              <div class="stat-title">异常状态</div>
+              <div class="stat-value">{{ errorDomains }}</div>
+              <div class="stat-label">个域名</div>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -52,7 +51,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { InfoFilled } from '@element-plus/icons-vue'
+import { InfoFilled, Connection, Timer, WarningFilled } from '@element-plus/icons-vue'
 
 const props = defineProps({
   domains: {
@@ -81,54 +80,86 @@ const errorDomains = computed(() => {
 
 <style scoped>
 .dashboard {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
 .stat-card {
-  height: 160px;
+  height: 180px;
   transition: all 0.3s;
+  border-radius: 16px;
+  border: none;
+  overflow: hidden;
 }
 
 .stat-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
-.card-header {
+.card-body {
+  height: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
+  padding: 20px;
 }
 
-.stat-value {
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 80px;
+  font-size: 28px;
+  margin-right: 20px;
 }
 
-.number {
-  font-size: 36px;
-  font-weight: bold;
-  color: #409EFF;
+.primary .stat-icon {
+  background-color: rgba(110, 69, 226, 0.1);
+  color: #6e45e2;
 }
 
-.warning .number {
+.warning .stat-icon {
+  background-color: rgba(230, 162, 60, 0.1);
   color: #E6A23C;
 }
 
-.error .number {
+.danger .stat-icon {
+  background-color: rgba(245, 108, 108, 0.1);
   color: #F56C6C;
 }
 
-.label {
-  margin-top: 8px;
-  color: #909399;
-  font-size: 14px;
+.stat-info {
+  flex: 1;
 }
 
-.el-icon {
-  cursor: help;
+.stat-title {
+  font-size: 16px;
+  color: #606266;
+  margin-bottom: 10px;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 5px;
+}
+
+.primary .stat-value {
+  color: #6e45e2;
+}
+
+.warning .stat-value {
+  color: #E6A23C;
+}
+
+.danger .stat-value {
+  color: #F56C6C;
+}
+
+.stat-label {
+  font-size: 14px;
   color: #909399;
 }
 </style> 
