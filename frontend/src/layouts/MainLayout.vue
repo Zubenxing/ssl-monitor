@@ -8,7 +8,6 @@
       <el-menu
         :default-active="activeMenu"
         class="side-menu"
-        @select="handleSelect"
         :router="true">
         <el-menu-item index="/dashboard">
           <el-icon><DataBoard /></el-icon>
@@ -69,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Monitor, DataBoard, Document, Setting, Bell, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -78,9 +77,10 @@ const router = useRouter()
 const route = useRoute()
 const activeMenu = ref(route.path)
 
-const handleSelect = (index) => {
-  router.push(index)
-}
+// 监听路由变化，更新活动菜单项
+watch(() => route.path, (newPath) => {
+  activeMenu.value = newPath
+})
 
 const handleCommand = (command) => {
   if (command === 'logout') {
